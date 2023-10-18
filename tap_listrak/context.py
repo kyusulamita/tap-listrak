@@ -26,6 +26,7 @@ class Context(object):
         self.selected_stream_ids = None
         self.cache = {}
         self.now = datetime.utcnow()
+        self.end_date = config.get("end_date", self.now)
 
     @property
     def catalog(self):

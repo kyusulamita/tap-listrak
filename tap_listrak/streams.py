@@ -14,8 +14,8 @@ LOGGER = singer.get_logger()
 def gen_intervals(ctx, start_str):
     start_dt = pendulum.parse(start_str)
     interval = timedelta(days=ctx.config.get("interval_days", 365))
-    while start_dt < ctx.now:
-        end_dt = min(start_dt + interval, ctx.now)
+    while start_dt < ctx.end_date:
+        end_dt = min(start_dt + interval, ctx.end_date)
         yield start_dt, end_dt
         start_dt = end_dt
 
@@ -88,13 +88,13 @@ def sync_subscribed_contacts(ctx, lists):
                                ctx.client.service.ReportRangeSubscribedContacts,
                                ListID=lst["ListID"],
                                StartDate=start_dt,
-                               EndDate=ctx.now,
+                               EndDate=ctx.end_date,
                                Page=page)
             if not response:
                 break
             contacts = add_list_id(lst, transform(response))
             write_records(IDS.SUBSCRIBED_CONTACTS, contacts)
-    ctx.set_bookmark(BOOK.SUBSCRIBED_CONTACTS, ctx.now)
+    ctx.set_bookmark(BOOK.SUBSCRIBED_CONTACTS, ctx.end_date)
     ctx.write_state()
 
 SubStream = namedtuple("SubStream", ("tap_stream_id", "bookmark", "endpoint"))
@@ -115,7 +115,7 @@ def sync_message_sub_stream(ctx, messages, sub_stream):
                                getattr(ctx.client.service, sub_stream.endpoint),
                                MsgID=msg["MsgID"],
                                StartDate=start_dt,
-                               EndDate=ctx.now,
+                               EndDate=ctx.end_date,
                                Page=page)
             if not response:
                 break
@@ -151,7 +151,7 @@ def sync_message_sends_if_selected(ctx, messages):
 def update_sub_stream_bookmarks(ctx):
     for sub_stream in MESSAGE_SUB_STREAMS:
         if sub_stream.tap_stream_id in ctx.selected_stream_ids:
-            ctx.set_bookmark(sub_stream.bookmark, ctx.now)
+            ctx.set_bookmark(sub_stream.bookmark, ctx.end_date)
 
 
 def update_message_sends_bookmark(ctx, max_send_dt):

@@ -24,6 +24,8 @@ def log_retry_attempt(details):
                 exception.message,
                 details["wait"])
 
+
+@backoff.on_exception(backoff.expo, Fault, max_tries=10, factor=2, on_backoff=log_retry_attempt)
 def request(tap_stream_id, service_fn, **kwargs):
     with metrics.http_request_timer(tap_stream_id) as timer:
         try:
